@@ -11,17 +11,22 @@ import asyncio
 
 load_dotenv()
 
-# Configuración desde variables de entorno
+# Variables de entorno
 API_ID = int(os.getenv("API_ID"))
 API_HASH = os.getenv("API_HASH")
 SESSION_STRING = os.getenv("SESSION_STRING")
-CHANNEL = os.getenv("CHANNEL")  # Formato: '@nombre_del_canal'
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+CHANNEL = os.getenv("CHANNEL")
 
 SENDER = os.getenv("SENDER")
 PASS = os.getenv("PASS")
 RECIPIENT = os.getenv("MAIL")
 
-app = Client("telegram_bot", api_id=API_ID, api_hash=API_HASH, session_string=SESSION_STRING)
+# Inicialización dinámica de cliente
+if BOT_TOKEN:
+    app = Client("bot_session", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
+else:
+    app = Client("user_session", api_id=API_ID, api_hash=API_HASH, session_string=SESSION_STRING)
 
 def enviar_email(subject: str, body: str, file_path: str = None):
     msg = MIMEMultipart()
@@ -53,15 +58,17 @@ async def recibir_mensaje(client: Client, message: Message):
         file_path = await message.download()
         caption = message.caption or "(sin descripción)"
         enviar_email("📸 Nueva foto en Telegram", caption, file_path)
+        os.remove(file_path)
 
     elif message.video:
         file_path = await message.download()
         caption = message.caption or "(sin descripción)"
         enviar_email("🎥 Nuevo video en Telegram", caption, file_path)
+        os.remove(file_path)
 
 async def main():
     await app.start()
-    print("Bot iniciado y operativo.")
+    print("Bot o sesión iniciada correctamente.")
     await asyncio.Event().wait()
 
 if __name__ == "__main__":
